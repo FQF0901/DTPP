@@ -12,6 +12,9 @@ This repository contains the source code for the ICRA'24 paper:
 
 ## Getting Started
 ### 1. Configure devkit and environment
+```
+https://blog.csdn.net/qq_37795208/article/details/142530245【照着安装即可，但注意官方requirements_torch.txt已有torch版本，要按照DTPP的版本，见下Install PyTorch】
+```
 To set up your development environment, please follow these steps:
 - Download the [nuPlan dataset](https://www.nuscenes.org/nuplan#download) and configure the dataset as described [here](https://nuplan-devkit.readthedocs.io/en/latest/dataset_setup.html). 
 - Install the nuPlan devkit as instructed [here](https://nuplan-devkit.readthedocs.io/en/latest/installation.html) (tested version: v1.2.2). 
@@ -29,7 +32,17 @@ conda install pytorch==2.0.1 pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
 - Add the following environment variable to your `~/.bashrc` file (customizable):
 ```
+export NUPLAN_EXP_ROOT="$HOME/nuplan/exp"【注意数据集要放在这个路径下】
+
+具体应该是：
+
+nano ~/.bashrc
+
+# NuPlan 环境变量
+export NUPLAN_DATA_ROOT="$HOME/nuplan/dataset/mini"
+export NUPLAN_MAPS_ROOT="$HOME/nuplan/dataset/maps"
 export NUPLAN_EXP_ROOT="$HOME/nuplan/exp"
+export NUPLAN_DB_FILES="$HOME/nuplan/dataset/nuplan-v1.1/splits/mini"
 ```
 
 ### 2. Data processing
@@ -39,6 +52,9 @@ python data_process.py \
 --data_path nuplan/dataset/nuplan-v1.1/splits/val \
 --map_path nuplan/dataset/maps \
 --save_path nuplan/processed_data
+
+【正确如下：】
+python3 data_process.py --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/mini --map_path /home/fqf/nuplan/dataset/maps --save_path /home/fqf/nuplan/processed_data
 ```
 Three arguments are mandatory: ```--data_path``` to specify the path to the stored nuPlan dataset, ```--map_path``` to specify the path to the nuPlan map data, and ```--save_path``` to specify the path to save the processed data. Optionally, limit the number of scenarios with ```--total_scenarios``` argument.
 
@@ -48,6 +64,9 @@ To train the DTPP model, run:
 python train.py \
 --train_set nuplan/processed_data/train \
 --valid_set nuplan/processed_data/valid
+
+【正确如下：】
+python train.py --train_set /home/fqf/nuplan/processed_data/train --valid_set /home/fqf/nuplan/processed_data/valid
 ```
 Two arguments are mandatory: ```--train_set``` to specify the path to the processed training data and ```--valid_set``` to specify the path to the processed validation data.
 
@@ -62,6 +81,9 @@ python test.py \
 --map_path nuplan/dataset/maps \
 --model_path base_model.pth \
 --load_test_set
+
+【正确如下：】
+python test.py --test_type closed_loop_nonreactive_agents --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/test --map_path /home/fqf/nuplan/dataset/maps --model_path base_model.pth --load_test_set
 ```
 Choose one of the three options ('open_loop_boxes', 'closed_loop_nonreactive_agents', 'closed_loop_reactive_agents') for ```--test_type```, and specify the path to your trained model ```--model_path```. Ensure to provide ```--data_path``` and ```--map_path``` arguments as done in the data process step. Use ```--load_test_set``` and ```--model_path base_model.pth``` to test the performance of the base pre-trained model on selected testing scenarios.
 
