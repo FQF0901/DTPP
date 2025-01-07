@@ -54,7 +54,7 @@ python data_process.py \
 --save_path nuplan/processed_data
 
 【正确如下：】
-python3 data_process.py --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/mini --map_path /home/fqf/nuplan/dataset/maps --save_path /home/fqf/nuplan/processed_data
+python3 data_process.py --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/train_boston --map_path /home/fqf/nuplan/dataset/maps --save_path /home/fqf/nuplan/processed_data
 ```
 Three arguments are mandatory: ```--data_path``` to specify the path to the stored nuPlan dataset, ```--map_path``` to specify the path to the nuPlan map data, and ```--save_path``` to specify the path to save the processed data. Optionally, limit the number of scenarios with ```--total_scenarios``` argument.
 
@@ -83,7 +83,7 @@ python test.py \
 --load_test_set
 
 【正确如下：】
-python test.py --test_type closed_loop_nonreactive_agents --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/test --map_path /home/fqf/nuplan/dataset/maps --model_path base_model.pth --load_test_set
+python test.py --test_type closed_loop_nonreactive_agents --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/mini --map_path /home/fqf/nuplan/dataset/maps --model_path base_model.pth --load_test_set
 ```
 Choose one of the three options ('open_loop_boxes', 'closed_loop_nonreactive_agents', 'closed_loop_reactive_agents') for ```--test_type```, and specify the path to your trained model ```--model_path```. Ensure to provide ```--data_path``` and ```--map_path``` arguments as done in the data process step. Use ```--load_test_set``` and ```--model_path base_model.pth``` to test the performance of the base pre-trained model on selected testing scenarios.
 
