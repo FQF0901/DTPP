@@ -12,7 +12,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--test_type", "closed_loop_nonreactive_agents",
-                "--data_path", "/home/fqf/nuplan/dataset/nuplan-v1.1/splits/test",
+                "--data_path", "/home/fqf/nuplan/dataset/nuplan-v1.1/splits/mini",
                 "--map_path", "/home/fqf/nuplan/dataset/maps",
                 "--model_path", "base_model.pth",
                 "--load_test_set"
