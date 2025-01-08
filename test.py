@@ -164,6 +164,25 @@ def build_nuboard(scenario_builder, simulation_path):
 
 
 def main(args):
+    """
+    主函数，用于执行测试模拟并生成度量和汇总报告。
+    
+    参数:
+    - args: 命令行参数，包含测试类型、模型路径、设备信息等。
+
+    nuplan func:
+    - MetricAggregatorCallback: 用于在仿真过程中收集和聚合度量指标。它可以在仿真运行时或结束时计算和存储各种性能指标。
+    - MetricFileCallback: 用于将度量指标保存到文件中。它通常在仿真结束时被调用，将收集到的度量数据写入指定的文件格式（如JSON或CSV）。
+    - MetricSummaryCallback: 用于生成度量指标的摘要报告。它可以在仿真结束时创建一个简要的报告，概述仿真运行的关键性能指标。
+    - MultiMainCallback: 用于管理多个回调函数。它允许在仿真过程中同时运行多个回调函数，以便执行多种操作（如记录日志、保存度量数据等）。
+    - on_run_simulation_start: 这是一个回调函数，在仿真开始时被调用。它可以用于初始化仿真环境、设置初始条件或执行其他启动时的操作。
+    - ScenarioMapping: 用于将仿真场景映射到特定的配置或参数集。它可以根据输入数据或配置文件生成相应的仿真场景。
+    - NuPlanScenarioBuilder: 用于构建仿真场景。它根据输入的配置和参数生成具体的仿真场景，包括场景中的车辆、道路、交通信号等元素
+    - ScenarioFilter: 用于过滤仿真场景的类。它可以根据特定的条件（如场景类型、时间、天气等）筛选出符合条件的场景。
+    - SingleMachineParallelExecutor: 用于在单台机器上并行执行仿真任务的类。它可以利用多线程或多进程来加速仿真任务的执行。
+    - get_scenarios: 用于获取仿真场景的函数。它通常会从某个数据源（如数据库或文件系统）中加载场景数据，并返回一个场景列表。
+    - on_run_simulation_end: 在仿真结束时调用的回调函数。它可以用于执行一些清理工作、记录结果或触发后续的处理步骤。
+    """
     # parameters
     experiment_name = args.test_type  # [open_loop_boxes, closed_loop_nonreactive_agents, closed_loop_reactive_agents]
     job_name = 'DTPP_planner'
@@ -171,42 +190,44 @@ def main(args):
     experiment = f"{experiment_name}/{job_name}/{experiment_time}"  
     output_dir = f"testing_log/{experiment}"
     simulation_dir = "simulation"
-    metric_dir = "metrics"
-    aggregator_metric_dir = "aggregator_metric"
+    metric_dir = "metrics"  # 设置度量目录名称为'metrics'
+    aggregator_metric_dir = "aggregator_metric" # 设置聚合度量目录名称为'aggregator_metric'
 
     # initialize planner
-    torch.set_grad_enabled(False)
+    torch.set_grad_enabled(False)   # 关闭梯度计算
     planner = Planner(model_path=args.model_path, device=args.device)
 
     # initialize main aggregator
-    metric_aggregators = build_metrics_aggregators(experiment_name, output_dir, aggregator_metric_dir)
+    metric_aggregators = build_metrics_aggregators(experiment_name, output_dir, aggregator_metric_dir)  # 构建指标聚合器，用于汇总和处理实验中产生的各种指标
     metric_save_path = f"{output_dir}/{metric_dir}"
-    metric_aggregator_callback = MetricAggregatorCallback(metric_save_path, metric_aggregators)
-    metric_file_callback = MetricFileCallback(metric_file_output_path=f"{output_dir}/{metric_dir}",
+    metric_aggregator_callback = MetricAggregatorCallback(metric_save_path, metric_aggregators) # 创建指标聚合回调，用于在特定事件中处理指标数据聚合
+    metric_file_callback = MetricFileCallback(metric_file_output_path=f"{output_dir}/{metric_dir}", # 创建指标文件回调，用于在特定事件中处理指标数据文件
                                               scenario_metric_paths=[f"{output_dir}/{metric_dir}"],
                                               delete_scenario_metric_files=True)
-    metric_summary_callback = MetricSummaryCallback(metric_save_path=f"{output_dir}/{metric_dir}",
+    metric_summary_callback = MetricSummaryCallback(metric_save_path=f"{output_dir}/{metric_dir}",  # 创建指标汇总回调，用于在特定事件中处理指标数据汇总
                                                     metric_aggregator_save_path=f"{output_dir}/{aggregator_metric_dir}",
                                                     summary_output_path=f"{output_dir}/summary",
                                                     num_bins=20, pdf_file_name='summary.pdf')
-    main_callbacks = MultiMainCallback([metric_file_callback, metric_aggregator_callback, metric_summary_callback])
-    main_callbacks.on_run_simulation_start()
+    main_callbacks = MultiMainCallback([metric_file_callback, metric_aggregator_callback, metric_summary_callback]) # 创建主回调，用于在特定事件中处理主数据处理
+    main_callbacks.on_run_simulation_start()    # 在模拟运行开始时调用主回调的启动方法，初始化回调过程
 
     # build simulation folder
     build_simulation_experiment_folder(output_dir, simulation_dir, metric_dir, aggregator_metric_dir)
 
     # build scenarios
     print('Extracting scenarios...')
-    map_version = "nuplan-maps-v1.0"
-    scenario_mapping = ScenarioMapping(scenario_map=get_scenario_map(), subsample_ratio_override=0.5)
-    builder = NuPlanScenarioBuilder(args.data_path, args.map_path, None, None, map_version, scenario_mapping=scenario_mapping)
-    if args.load_test_set:
-        params = yaml.safe_load(open('test_scenario.yaml', 'r'))
-        scenario_filter = ScenarioFilter(**params)
-    else:
+    map_version = "nuplan-maps-v1.0"    # 定义地图的版本
+    scenario_mapping = ScenarioMapping(scenario_map=get_scenario_map(), subsample_ratio_override=0.5)   # 创建ScenarioMapping对象，用于映射场景，参数包括场景地图和采样比例
+    builder = NuPlanScenarioBuilder(args.data_path, args.map_path, None, None, map_version, scenario_mapping=scenario_mapping)  # 创建NuPlanScenarioBuilder对象，用于构建场景，参数包括数据路径、地图路径、地图版本和场景映射
+    
+    if args.load_test_set:  # 根据参数决定使用测试集还是根据给定参数过滤场景
+        params = yaml.safe_load(open('test_scenario.yaml', 'r'))     # 如果使用测试集，从文件中加载测试场景参数
+        scenario_filter = ScenarioFilter(**params)  # 根据加载的参数创建ScenarioFilter对象
+    else:   # 如果不使用测试集，根据给定的场景数量参数获取过滤参数并创建ScenarioFilter对象
         scenario_filter = ScenarioFilter(*get_filter_parameters(args.scenarios_per_type))
-    worker = SingleMachineParallelExecutor(use_process_pool=False)
-    scenarios = builder.get_scenarios(scenario_filter, worker)
+    
+    worker = SingleMachineParallelExecutor(use_process_pool=False)  # 创建SingleMachineParallelExecutor对象，用于执行并行任务，参数表示是否使用进程池
+    scenarios = builder.get_scenarios(scenario_filter, worker)  # 使用场景构建器、场景过滤器和并行执行器获取场景列表
 
     # begin testing
     print('Running simulations...')
@@ -220,13 +241,13 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_path', type=str)
-    parser.add_argument('--map_path', type=str)
-    parser.add_argument('--model_path', type=str)
-    parser.add_argument('--test_type', type=str, default='closed_loop_nonreactive_agents')
-    parser.add_argument('--load_test_set', action='store_true')
-    parser.add_argument('--device', type=str, default='cuda')
-    parser.add_argument('--scenarios_per_type', type=int, default=20)
+    parser.add_argument('--data_path', type=str)    # 添加数据路径参数，用于指定数据集的位置
+    parser.add_argument('--map_path', type=str) # 添加地图路径参数，用于指定地图信息的位置
+    parser.add_argument('--model_path', type=str)   # 添加模型路径参数，用于指定模型保存或加载的位置
+    parser.add_argument('--test_type', type=str, default='closed_loop_nonreactive_agents')  # 添加测试类型参数，用于指定测试类型
+    parser.add_argument('--load_test_set', action='store_true') # 添加是否加载测试集参数，用于指定是否加载测试集
+    parser.add_argument('--device', type=str, default='cuda')   # 添加设备参数，用于指定模型运行的设备
+    parser.add_argument('--scenarios_per_type', type=int, default=20)   # 添加测试场景数量参数，用于指定每种测试类型的测试场景数量
     args = parser.parse_args()
 
     main(args)
