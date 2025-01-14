@@ -25,6 +25,15 @@ git clone https://github.com/MCZhi/DTPP.git && cd DTPP
 - Activate the environment created when installing the nuPlan-devkit:
 ```
 conda activate nuplan
+
+或者开一个dtpp自己conda env:
+conda create -n dtpp python=3.9
+conda activate dtpp
+
+git clone https://github.com/motional/nuplan-devkit.git && cd nuplan-devkit
+pip install -e .
+python -m pip install pip==24.0
+pip install -r ./requirements.txt
 ```
 - Install PyTorch:
 ```
