@@ -113,10 +113,11 @@ class ScoreDecoder(nn.Module):
         curvature = ego_traj[:, :, :max_time, 5]
         lateral_acceleration = speed ** 2 * curvature
 
-        speed = -speed.mean(-1).clip(0, 15) / 15
-        acceleration = acceleration.abs().mean(-1).clip(0, 4) / 4
-        jerk = jerk.abs().mean(-1).clip(0, 6) / 6
-        lateral_acceleration = lateral_acceleration.abs().mean(-1).clip(0, 5) / 5
+        # 硬编码的含义在下：固定参数，没有提供灵活的配置选项
+        speed = -speed.mean(-1).clip(0, 15) / 15    # 速度的最大值为15
+        acceleration = acceleration.abs().mean(-1).clip(0, 4) / 4   # 加速度的最大值为4
+        jerk = jerk.abs().mean(-1).clip(0, 6) / 6   # 急动度的最大值为6
+        lateral_acceleration = lateral_acceleration.abs().mean(-1).clip(0, 5) / 5   # 侧向加速度的最大值为5
 
         features = torch.stack((speed, acceleration, jerk, lateral_acceleration), dim=-1)
 
@@ -146,7 +147,7 @@ class ScoreDecoder(nn.Module):
         # Get agent mask
         agent_mask = torch.ne(agents_states.sum(-1), 0) # B, N
 
-        # Get relative attributes of agents
+        # Get relative attributes of agents：以计算相对偏航角（Relative Yaw Angle）、相对位置（Relative Position）、相对速度（Relative Velocity）
         relative_yaw = agent_traj[:, :, :max_time, 2] - ego_traj[:, None, :max_time, 2]
         relative_yaw = torch.atan2(torch.sin(relative_yaw), torch.cos(relative_yaw))
         relative_pos = agent_traj[:, :, :max_time, :2] - ego_traj[:, None, :max_time, :2]
@@ -165,7 +166,7 @@ class ScoreDecoder(nn.Module):
         attributes = torch.cat((relative_attributes, agent_attributes), dim=-1)
         attributes = attributes * agent_mask[:, :, None, None]
 
-        # Encode relative attributes and decode to latent interaction features
+        # Encode relative attributes and decode to latent interaction features。相对于自车（ego vehicle）的其他车辆（agents）的一些属性
         features = self.interaction_feature_encoder(attributes)
         features = features.max(1).values.mean(1)
         features = self.interaction_feature_decoder(features)
@@ -173,8 +174,8 @@ class ScoreDecoder(nn.Module):
         return features
 
     def forward(self, ego_traj, ego_encoding, agents_traj, agents_states, timesteps):
-        ego_traj_features = self.get_hardcoded_features(ego_traj, timesteps)
-        if not self._variable_cost:
+        ego_traj_features = self.get_hardcoded_features(ego_traj, timesteps)     # 自车控制平顺性的特征：speed, acceleration, jerk, lateral_acceleration
+        if not self._variable_cost: # 如果成本不随时间变化，则将ego_encoding设置为全1张量
             ego_encoding = torch.ones_like(ego_encoding)
         weights = self.weights_decoder(ego_encoding)
         ego_mask = torch.ne(ego_traj.sum(-1).sum(-1), 0)
@@ -184,12 +185,12 @@ class ScoreDecoder(nn.Module):
             hardcoded_features = ego_traj_features[:, i]
             interaction_features = self.get_latent_interaction_features(ego_traj[:, i], agents_traj[:, i], agents_states, timesteps)
             features = torch.cat((hardcoded_features, interaction_features), dim=-1)
-            score = -torch.sum(features * weights, dim=-1)
+            score = -torch.sum(features * weights, dim=-1)  # 计算特征与权重的点积，并取负值作为分数
             collision_feature = self.calculate_collision(ego_traj[:, i], agents_traj[:, i], agents_states, timesteps)
-            score += -10 * collision_feature
+            score += -10 * collision_feature    # 碰撞成本，10倍惩罚
             scores.append(score)
 
         scores = torch.stack(scores, dim=1)
-        scores = torch.where(ego_mask, scores, float('-inf'))
+        scores = torch.where(ego_mask, scores, float('-inf'))   # 使用ego_mask筛选有效分数，无效位置设置为负无穷
 
-        return scores, weights
+        return scores, weights  # 自车平顺性 + 障碍物交互特征 + 碰撞成本
