@@ -31,9 +31,9 @@ conda create -n dtpp python=3.9
 conda activate dtpp
 
 git clone https://github.com/motional/nuplan-devkit.git && cd nuplan-devkit
-pip install -e .
 python -m pip install pip==24.0
-pip install -r ./requirements.txt
+pip install -e . 或者 pip install .
+pip install -r ./requirements.txt（详细见nuplan的readme.md）
 ```
 - Install PyTorch:
 ```
