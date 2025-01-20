@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Train Model",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/train.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--train_set", "/home/fqf/nuplan/processed_data/train",
+                "--valid_set", "/home/fqf/nuplan/processed_data/valid"
+            ],
+            "justMyCode": false
+        },
+        {
             "name": "Python: Test Closed Loop Nonreactive Agents",
             "type": "debugpy",
             "request": "launch",

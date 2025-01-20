@@ -145,10 +145,10 @@ def model_training(args):
     set_seed(args.seed)
 
     # set up model
-    encoder = Encoder().to(args.device)
+    encoder = Encoder().to(args.device) # ego encoder, agents encoder, lanes encoder, crosslines encoder, fusion net
     logging.info("Encoder Params: {}".format(sum(p.numel() for p in encoder.parameters())))
     decoder = Decoder(neighbors=args.num_neighbors, max_branch=args.num_candidates, \
-                      variable_cost=args.variable_weights).to(args.device)
+                      variable_cost=args.variable_weights).to(args.device)  # args.num_neighbors = 10, args.num_candidates = 30
     logging.info("Decoder Params: {}".format(sum(p.numel() for p in decoder.parameters())))
 
     # set up optimizer
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_neighbors', type=int, help='number of neighbor agents to predict', default=10)
     parser.add_argument('--num_candidates', type=int, help='number of max candidate trajectories', default=30)
     parser.add_argument('--variable_weights', type=bool, help='use variable cost weights', default=False)
-    parser.add_argument('--train_epochs', type=int, help='epochs of training', default=30)
+    parser.add_argument('--train_epochs', type=int, help='epochs of training', default=10)
     parser.add_argument('--batch_size', type=int, help='batch size', default=16)
     parser.add_argument('--learning_rate', type=float, help='learning rate', default=2e-4)
     parser.add_argument('--device', type=str, help='run on which device', default='cuda')
