@@ -91,7 +91,7 @@ python test.py \
 --model_path base_model.pth \
 --load_test_set
 
-【正确如下：】
+【正确如下：但可能需要安装pytorch-lightning、numpy=1.23、urllib3==1.26.7】
 python test.py --test_type closed_loop_nonreactive_agents --data_path /home/fqf/nuplan/dataset/nuplan-v1.1/splits/mini --map_path /home/fqf/nuplan/dataset/maps --model_path base_model.pth --load_test_set
 ```
 Choose one of the three options ('open_loop_boxes', 'closed_loop_nonreactive_agents', 'closed_loop_reactive_agents') for ```--test_type```, and specify the path to your trained model ```--model_path```. Ensure to provide ```--data_path``` and ```--map_path``` arguments as done in the data process step. Use ```--load_test_set``` and ```--model_path base_model.pth``` to test the performance of the base pre-trained model on selected testing scenarios.
